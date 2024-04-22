@@ -1,4 +1,4 @@
-from htmlnode import LeafNode, HTMLNode
+from htmlnode import LeafNode, ParentNode, HTMLNode
 import re
 
 text_type_text="text"
@@ -7,6 +7,13 @@ text_type_italic="italic"
 text_type_code="code"
 text_type_link="link"
 text_type_image="image"
+
+block_type_paragraph = "paragraph"
+block_type_heading = "heading"
+block_type_code = "code"
+block_type_quote = "quote"
+block_type_unordered_list = "unordered"
+block_type_ordered_list = "ordered"
 
 
 class TextNode:
@@ -133,3 +140,50 @@ def text_to_textnodes(text):
     nodes_list = split_nodes_link(nodes_list)
 
     return nodes_list
+
+def markdown_to_blocks(markdown):
+    block_text = markdown.split("\n\n")
+    node_list = []
+    for block in block_text:
+        if block == "":
+            continue
+        node_list.append(block.strip())
+
+    return node_list
+
+def block_to_block_type(block):
+    if block[0] == "#":
+        return block_type_heading
+    elif block[0:3] == "```" and block[-3:] == "```":
+        return block_type_code
+    elif block[0] == ">":
+        lines = block.split("\n")
+        for line in lines:
+            if line[0] != ">":
+                return block_type_paragraph
+        return block_type_quote
+    elif block[0:2] == "* " or block[0:2] == "- ":
+        lines = block.split("\n")
+        for line in lines:
+            if line[0:2] != "* " and line[0:2] != "- ":
+                return block_type_paragraph
+        return block_type_unordered_list
+    elif block[0:3] == "1. ":
+        lines = block.split("\n")
+        for i in range(0, len(lines)):
+            if lines[i][0:3] != f"{i+1}. ":
+                return block_type_paragraph
+        return block_type_ordered_list
+    else:
+        return block_type_paragraph
+
+def markdown_to_html_node(markdown):
+    top_children = []
+    top_node = ParentNode("div", top_children)
+    markdown_blocks = markdown_to_blocks(markdown)
+    for block in markdown_blocks:
+        block_type = block_to_block_type(block)
+        text_nodes = text_to_textnodes(block)
+        inner_children = []
+        if block_type == block_type_paragraph:
+            
